@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT RL Routing — Results Dashboard</title>
+    <meta name="description" content="Interactive dashboard for Energy and QoS-Aware Intelligent Routing for IoT Networks using Reinforcement Learning">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2035;
+            --bg-card-hover: #1f2847;
+            --border: rgba(99, 102, 241, 0.15);
+            --border-glow: rgba(99, 102, 241, 0.4);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #6366f1;
+            --accent-cyan: #22d3ee;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+            --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --gradient-2: linear-gradient(135deg, #22d3ee, #06b6d4);
+            --gradient-3: linear-gradient(135deg, #10b981, #059669);
+            --gradient-4: linear-gradient(135deg, #f59e0b, #d97706);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(34, 211, 238, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .header .badge {
+            display: inline-block;
+            padding: 0.35rem 1rem;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f1f5f9, #6366f1, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Scenario Tabs */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+            animation: fadeIn 1s ease-out 0.2s both;
+        }
+
+        .tab-btn {
+            padding: 0.6rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-glow);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active {
+            background: var(--gradient-1);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 2.5rem;
+            animation: fadeIn 1s ease-out 0.4s both;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .kpi-card:nth-child(1)::before { background: var(--gradient-1); }
+        .kpi-card:nth-child(2)::before { background: var(--gradient-2); }
+        .kpi-card:nth-child(3)::before { background: var(--gradient-3); }
+        .kpi-card:nth-child(4)::before { background: var(--gradient-4); }
+
+        .kpi-card:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .kpi-card .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-card .value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+
+        .kpi-card:nth-child(1) .value { color: var(--accent-blue); }
+        .kpi-card:nth-child(2) .value { color: var(--accent-cyan); }
+        .kpi-card:nth-child(3) .value { color: var(--accent-green); }
+        .kpi-card:nth-child(4) .value { color: var(--accent-orange); }
+
+        .kpi-card .comparison {
+            font-size: 0.78rem;
+            color: var(--accent-green);
+            font-weight: 500;
+        }
+
+        .kpi-card .comparison.negative { color: var(--accent-red); }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            animation: fadeIn 1s ease-out 0.6s both;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .chart-card:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .chart-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            color: var(--text-primary);
+        }
+
+        /* Bar Chart */
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .bar-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .bar-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .bar-track {
+            width: 100%;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding-left: 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            transition: width 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            min-width: 50px;
+        }
+
+        .bar-fill.random { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .bar-fill.shortest { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+        .bar-fill.energy-sp { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .bar-fill.ppo { background: linear-gradient(90deg, #10b981, #059669); }
+
+        /* Results Table */
+        .table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            animation: fadeIn 1s ease-out 0.8s both;
+            overflow-x: auto;
+        }
+
+        .table-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        thead th {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0.85rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        thead th:first-child { border-radius: 10px 0 0 0; }
+        thead th:last-child { border-radius: 0 10px 0 0; }
+
+        tbody td {
+            padding: 0.85rem 1rem;
+            font-size: 0.88rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-variant-numeric: tabular-nums;
+        }
+
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        tbody tr.highlight {
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        tbody tr.highlight td:first-child {
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+
+        .method-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .method-dot.random { background: var(--accent-red); }
+        .method-dot.shortest { background: #3b82f6; }
+        .method-dot.energy-sp { background: var(--accent-orange); }
+        .method-dot.ppo { background: var(--accent-green); }
+
+        .best-value {
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            animation: fadeIn 1s ease-out 1s both;
+        }
+
+        .footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.8rem; }
+            .tabs { gap: 0.35rem; }
+            .tab-btn { padding: 0.5rem 1rem; font-size: 0.78rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="badge">Reinforcement Learning × IoT Networks</div>
+            <h1>Energy & QoS-Aware Intelligent Routing</h1>
+            <p>MaskablePPO agent trained to route packets across dynamic 20-node IoT networks, evaluated against traditional baselines under 4 network scenarios.</p>
+        </div>
+
+        <!-- Scenario Tabs -->
+        <div class="tabs" id="scenarioTabs"></div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>📊 Success Rate Comparison</h3>
+                <div class="bar-chart" id="successChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>⚡ Average Reward</h3>
+                <div class="bar-chart" id="rewardChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>🔋 Energy Consumed</h3>
+                <div class="bar-chart" id="energyChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>🚀 Average Steps to Destination</h3>
+                <div class="bar-chart" id="stepsChart"></div>
+            </div>
+        </div>
+
+        <!-- Full Results Table -->
+        <div class="table-card">
+            <h3>📋 Detailed Results — All Scenarios</h3>
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Method</th>
+                        <th>Avg Reward</th>
+                        <th>Avg Energy</th>
+                        <th>Success Rate</th>
+                        <th>Avg Steps</th>
+                        <th>Min Battery</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Built with MaskablePPO (sb3-contrib) • 200k training timesteps • 20-node small-world topology</p>
+            <p style="margin-top: 0.3rem">
+                <a href="https://github.com/Nijanth-14/IOT_RL_AI_MODEL" target="_blank">GitHub Repository ↗</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // Evaluation Data
+        // ============================================================
+        const DATA = {
+            "Normal": {
+                params: "traffic=0.3, failure=0.02",
+                methods: {
+                    "Random":        { reward: -3.61,   energy: 116.43, success: 86.0,  steps: 18.0,  minBatt: 67.40 },
+                    "ShortestPath":  { reward: 249.16,  energy: 5.57,   success: 100.0, steps: 1.32,  minBatt: 79.42 },
+                    "EnergyAwareSP": { reward: 251.64,  energy: 5.00,   success: 100.0, steps: 1.39,  minBatt: 80.21 },
+                    "PPO":           { reward: 249.20,  energy: 5.66,   success: 100.0, steps: 1.36,  minBatt: 78.98 }
+                }
+            },
+            "Congested": {
+                params: "traffic=0.7, failure=0.02",
+                methods: {
+                    "Random":        { reward: -338.71, energy: 223.30, success: 89.0,  steps: 17.2,  minBatt: 54.93 },
+                    "ShortestPath":  { reward: 248.60,  energy: 5.73,   success: 100.0, steps: 1.32,  minBatt: 78.95 },
+                    "EnergyAwareSP": { reward: 250.83,  energy: 5.22,   success: 100.0, steps: 1.37,  minBatt: 79.44 },
+                    "PPO":           { reward: 249.18,  energy: 5.79,   success: 100.0, steps: 1.38,  minBatt: 80.67 }
+                }
+            },
+            "Unstable": {
+                params: "traffic=0.3, failure=0.10",
+                methods: {
+                    "Random":        { reward: 18.07,   energy: 112.46, success: 89.0,  steps: 18.0,  minBatt: 67.40 },
+                    "ShortestPath":  { reward: 248.98,  energy: 5.86,   success: 100.0, steps: 1.39,  minBatt: 78.64 },
+                    "EnergyAwareSP": { reward: 251.47,  energy: 5.25,   success: 100.0, steps: 1.45,  minBatt: 79.96 },
+                    "PPO":           { reward: 245.60,  energy: 8.00,   success: 100.0, steps: 1.83,  minBatt: 79.11 }
+                }
+            },
+            "Extreme": {
+                params: "traffic=0.8, failure=0.10",
+                methods: {
+                    "Random":        { reward: -579.53, energy: 291.35, success: 78.0,  steps: 19.3,  minBatt: 45.77 },
+                    "ShortestPath":  { reward: 247.64,  energy: 6.58,   success: 100.0, steps: 1.43,  minBatt: 80.11 },
+                    "EnergyAwareSP": { reward: 250.55,  energy: 5.56,   success: 100.0, steps: 1.45,  minBatt: 79.36 },
+                    "PPO":           { reward: 245.51,  energy: 7.26,   success: 100.0, steps: 1.55,  minBatt: 80.09 }
+                }
+            }
+        };
+
+        const METHOD_CLASSES = {
+            "Random": "random",
+            "ShortestPath": "shortest",
+            "EnergyAwareSP": "energy-sp",
+            "PPO": "ppo"
+        };
+
+        const METHOD_LABELS = {
+            "Random": "Random Walk",
+            "ShortestPath": "Shortest Path (Dijkstra)",
+            "EnergyAwareSP": "Energy-Aware SP",
+            "PPO": "PPO (RL Agent)"
+        };
+
+        let currentScenario = "Normal";
+
+        // ============================================================
+        // Render Functions
+        // ============================================================
+
+        function renderTabs() {
+            const container = document.getElementById('scenarioTabs');
+            container.innerHTML = '';
+            for (const scenario of Object.keys(DATA)) {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${scenario === currentScenario ? 'active' : ''}`;
+                btn.textContent = `${scenario}`;
+                btn.title = DATA[scenario].params;
+                btn.onclick = () => {
+                    currentScenario = scenario;
+                    renderAll();
+                };
+                container.appendChild(btn);
+            }
+        }
+
+        function renderKPIs() {
+            const d = DATA[currentScenario].methods;
+            const ppo = d.PPO;
+            const sp = d.ShortestPath;
+            const rand = d.Random;
+
+            const rewardDiff = ppo.reward - rand.reward;
+            const energyDiff = ((sp.energy - ppo.energy) / sp.energy * 100);
+
+            const kpis = [
+                { label: "PPO Avg Reward", value: ppo.reward.toFixed(1), comp: `+${rewardDiff.toFixed(0)} vs Random`, positive: true },
+                { label: "PPO Energy Used", value: ppo.energy.toFixed(1), comp: `${(ppo.energy / rand.energy * 100).toFixed(0)}% of Random's`, positive: ppo.energy < rand.energy },
+                { label: "PPO Success Rate", value: `${ppo.success}%`, comp: `${ppo.success >= sp.success ? '=' : '-'}${Math.abs(ppo.success - sp.success).toFixed(0)}% vs Dijkstra`, positive: ppo.success >= sp.success },
+                { label: "PPO Avg Steps", value: ppo.steps.toFixed(2), comp: `${ppo.steps <= sp.steps * 1.5 ? '✓ Near-optimal' : '△ Room to improve'}`, positive: ppo.steps <= sp.steps * 1.5 }
+            ];
+
+            const grid = document.getElementById('kpiGrid');
+            grid.innerHTML = '';
+            kpis.forEach(k => {
+                grid.innerHTML += `
+                    <div class="kpi-card">
+                        <div class="label">${k.label}</div>
+                        <div class="value">${k.value}</div>
+                        <div class="comparison ${k.positive ? '' : 'negative'}">${k.comp}</div>
+                    </div>`;
+            });
+        }
+
+        function renderBarChart(containerId, metric, maxVal) {
+            const container = document.getElementById(containerId);
+            const d = DATA[currentScenario].methods;
+            container.innerHTML = '';
+
+            // Compute max for scaling
+            let values = Object.values(d).map(m => Math.abs(m[metric]));
+            let scale = maxVal || Math.max(...values);
+            if (scale === 0) scale = 1;
+
+            for (const [method, data] of Object.entries(d)) {
+                const val = data[metric];
+                const pct = Math.max(2, Math.abs(val) / scale * 100);
+                const cls = METHOD_CLASSES[method];
+                container.innerHTML += `
+                    <div class="bar-group">
+                        <div class="bar-label">${METHOD_LABELS[method]}</div>
+                        <div class="bar-track">
+                            <div class="bar-fill ${cls}" style="width: ${pct}%">${metric === 'success' ? val.toFixed(0) + '%' : val.toFixed(1)}</div>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            for (const [scenario, sdata] of Object.entries(DATA)) {
+                let first = true;
+                for (const [method, mdata] of Object.entries(sdata.methods)) {
+                    const isPPO = method === 'PPO';
+                    const cls = METHOD_CLASSES[method];
+                    tbody.innerHTML += `
+                        <tr class="${isPPO ? 'highlight' : ''}">
+                            <td>${first ? scenario : ''}</td>
+                            <td><span class="method-dot ${cls}"></span>${METHOD_LABELS[method]}</td>
+                            <td>${mdata.reward.toFixed(2)}</td>
+                            <td>${mdata.energy.toFixed(2)}</td>
+                            <td>${mdata.success.toFixed(1)}%</td>
+                            <td>${mdata.steps.toFixed(2)}</td>
+                            <td>${mdata.minBatt.toFixed(2)}</td>
+                        </tr>`;
+                    first = false;
+                }
+            }
+        }
+
+        function renderAll() {
+            renderTabs();
+            renderKPIs();
+            renderBarChart('successChart', 'success', 100);
+            renderBarChart('rewardChart', 'reward');
+            renderBarChart('energyChart', 'energy');
+            renderBarChart('stepsChart', 'steps');
+            renderTable();
+        }
+
+        // Initialize
+        renderAll();
+    </script>
+</body>
+</html>
